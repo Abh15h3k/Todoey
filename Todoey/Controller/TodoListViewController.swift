@@ -14,6 +14,8 @@ class TodoListViewController: UITableViewController {
     let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("items.plist")
     var itemArray = [Item]()
     
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    
     let defaults = UserDefaults.standard
     
     override func viewDidLoad() {
@@ -66,14 +68,15 @@ class TodoListViewController: UITableViewController {
         
         let action = UIAlertAction(title: "Add", style: .default) { (action) in
             
-            let newItem = Item()
+        let newItem = Item(context: self.context)
             
-            newItem.title = textField.text!
+        newItem.title = textField.text!
+        newItem.done = false
             
-            self.itemArray.append(newItem)
+        self.itemArray.append(newItem)
             
-            self.saveData()
-        }
+        self.saveData()
+    }
         
         alert.addAction(action)
         
@@ -89,32 +92,33 @@ class TodoListViewController: UITableViewController {
     }
     
     func saveData() {
-        let encoder = PropertyListEncoder()
+       
         
         do {
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
-            print("check2")
+            try context.save()
         } catch {
-            print("Encode Error \(error)")
+            print("Error saving context \(error)")
         }
         self.tableView.reloadData()
     }
     
     func loadItems() {
         
-        if let data = try? Data(contentsOf: dataFilePath!) {
-            print("check1")
-            let decoder = PropertyListDecoder()
-            do {
-                itemArray = try decoder.decode([Item].self, from: data)
-            } catch {
-                print("Decode Error \(error)")
-            }
+        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        do {
+            itemArray = try context.fetch(request)
+        } catch {
+            print("Error")
         }
-        
     }
-
-    
-    
 }
+
+/*
+
+ How to delete from database:
+ 
+ context.delete(itemArray[indexPath.row]
+ itemArray.remove(at: indexPath.row)
+
+*/
+
